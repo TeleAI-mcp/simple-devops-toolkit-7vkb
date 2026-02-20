@@ -1,0 +1,33 @@
+name: Label Comment Bot
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if label matches
+        id: check-label
+        run: |
+          if [ "${{ github.event.label.name }}" = "enhancement" ]; then
+            echo "COMMENT=Thanks for the enhancement suggestion! We appreciate your input." >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.label.name }}" = "bug" ]; then
+            echo "COMMENT=Thank you for reporting this bug. Our team will investigate and fix it." >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.label.name }}" = "feature" ]; then
+            echo "COMMENT=Thank you for the feature request. We will consider including this in a future release." >> $GITHUB_OUTPUT
+          else
+            echo "COMMENT=" >> $GITHUB_OUTPUT
+          fi
+      - name: Add comment
+        if: steps.check-label.outputs.COMMENT != ''
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${{ steps.check-label.outputs.COMMENT }}`
+            })
