@@ -1,45 +1,32 @@
-name: Issue Label Comment Bot
+name: Label-based Issue Comment Bot
 
 on:
   issues:
     types: [labeled]
 
 jobs:
-  comment-on-label:
+  comment:
     runs-on: ubuntu-latest
     steps:
-      - name: Comment on enhancement label
-        if: github.event.label.name == 'enhancement'
+      - name: Comment on issue based on label
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Thanks for the enhancement suggestion! We appreciate your input.'
-            })
-      
-      - name: Comment on bug label
-        if: github.event.label.name == 'bug'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Thank you for reporting this bug. Our team will investigate and fix it.'
-            })
-      
-      - name: Comment on feature label
-        if: github.event.label.name == 'feature'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Thank you for the feature request. We will consider including this in a future release.'
-            })
+            const label = context.payload.label.name;
+            const issue_number = context.payload.issue.number;
+            
+            const comments = {
+              'enhancement': 'Thanks for the enhancement suggestion! We appreciate your input.',
+              'bug': 'Thank you for reporting this bug. Our team will investigate and fix it.',
+              'feature': 'Thank you for the feature request. We will consider including this in a future release.'
+            };
+            
+            if (comments[label]) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                body: comments[label]
+              });
+            }
